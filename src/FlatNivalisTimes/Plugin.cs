@@ -12,7 +12,7 @@ public sealed class Plugin : BasePlugin
     public const string Id = "NivalisNights.FlatNivalisTimes";
     public const string Name = "Flat Nivalis Times";
     public const string Subtitle = "Newspaper Readability Mod";
-    public const string Version = "1.0.0";
+    public const string Version = "1.1.14";
     internal static BepInEx.Logging.ManualLogSource Logger = null!;
     private Harmony? harmony;
     private static readonly HashSet<string> Reported = new();
@@ -21,17 +21,22 @@ public sealed class Plugin : BasePlugin
     {
         Logger = Log;
         AccessibilitySettings.Initialize(Config);
+        ReaderSettings.Initialize(Config);
         harmony = new Harmony(Id);
-        try { harmony.PatchAll(typeof(Plugin).Assembly); }
+        try { harmony.PatchAll(typeof(Plugin).Assembly); AddComponent<ReaderRunner>(); }
         catch { harmony.UnpatchSelf(); throw; }
-        Log.LogInfo($"{Name} {Version} loaded. {Subtitle}. Gameplay accessibility toggle; mod config only. Enabled={AccessibilitySettings.Enabled}. RuntimeAccepted=false.");
+        Log.LogInfo($"{Name} {Version} loaded. {Subtitle}. Reading controls V/B/H (RB/LB/X); mod config only. Enabled={AccessibilitySettings.Enabled}. RuntimeAccepted=false.");
     }
 
     public override bool Unload()
     {
-        // Restoring a live deformer requires the same completed-cloth boundary as installation.
-        if (PaperStates.HasOwnedResources || ReadingGrip.HasOwnedState) return false;
-        SettingsUi.Shutdown();
+        var cleanup = new CleanupBatch();
+        cleanup.Attempt(() => ReaderRunner.Current?.Shutdown());
+        cleanup.Attempt(SettingsUi.Shutdown);
+        try { cleanup.ThrowIfFailed(); }
+        catch (Exception error) { ReportOnce("unload cleanup retained", error); return false; }
+        // Keep boundary patches while any native owner still requires restoration.
+        if (PaperStates.HasOwnedResources || ReadingGrip.HasOwnedState || ReaderRunner.Current?.HasOwnedResources == true) return false;
         harmony?.UnpatchSelf();
         return true;
     }

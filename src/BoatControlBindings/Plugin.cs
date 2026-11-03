@@ -6,7 +6,7 @@ using HarmonyLib;
 
 namespace NivalisNights.BoatControlBindings;
 
-[BepInPlugin(Id, "Nivalis Nights Boat Control Bindings", "0.1.8")]
+[BepInPlugin(Id, "Nivalis Nights Boat Control Bindings", "1.1.1")]
 public sealed class Plugin : BasePlugin
 {
     public const string Id = BoatSettings.Id;
@@ -26,7 +26,7 @@ public sealed class Plugin : BasePlugin
         harmony = new Harmony(Id);
         try { harmony.PatchAll(typeof(Plugin).Assembly); AddComponent<BoatRunner>(); }
         catch { harmony.UnpatchSelf(); throw; }
-        Log.LogInfo("Boat Control Bindings 0.1.8 loaded: Y engine, X dock, LB lights; localized bottom hints only. RuntimeAccepted=false.");
+        Log.LogInfo("Boat Control Bindings 1.1.1 loaded: Y engine, X dock, LB lights; localized bottom hints only. RuntimeAccepted=false.");
     }
     public override bool Unload() { BoatRunner.Current?.Shutdown(); harmony?.UnpatchSelf(); return true; }
 }

@@ -35,17 +35,23 @@ internal static class PaperStates
         Dead.Clear();
         foreach (var (key, state) in States)
         {
-            if (!Alive(state.Paper))
+            try
             {
-                ReadingGrip.Release(state.Paper);
-                state.ReleaseDestroyedOwner();
-                Dead.Add(key);
-            }
-            else if (!state.Failed)
-            {
-                if (AccessibilitySettings.Enabled && !state.Applied) state.TryApply(manager);
-                else if (!AccessibilitySettings.Enabled && state.Applied) state.TryRestore(manager);
-            }
+                // A completed boundary on a replacement manager does not authorize
+                // joining or releasing the previous manager's consumers.
+                if (!state.CheckBoundaryOwner(manager)) continue;
+                if (!Alive(state.Paper))
+                {
+                    ReadingGrip.Release(state.Paper);
+                    if (state.ReleaseDestroyedOwner(manager)) Dead.Add(key);
+                }
+                else if (!state.Failed)
+                {
+                    if (AccessibilitySettings.Enabled && !state.Applied) state.TryApply(manager);
+                    else if (!AccessibilitySettings.Enabled && state.Applied) state.TryRestore(manager);
+                }
+                }
+            catch (Exception error) { Plugin.ReportOnce("paper boundary retained", error); }
         }
         foreach (var key in Dead) States.Remove(key);
     }
@@ -82,6 +88,30 @@ internal sealed class PaperState
     private MagicaVirtualDeformer? virtualDeformer;
     private MagicaRenderDeformer? renderDeformer;
     private bool captured, clothEnable, virtualEnable, renderEnable;
+    private MagicaPhysicsManager? boundaryOwner;
+    private PhysicsManagerCompute? computeOwner;
+
+    internal bool CheckBoundaryOwner(MagicaPhysicsManager manager)
+    {
+        if (!captured) return true;
+        try
+        {
+            if (!PaperStates.Alive(boundaryOwner) || manager.Pointer != boundaryOwner!.Pointer
+                || manager.Compute == null || manager.Compute.Pointer != computeOwner?.Pointer)
+                throw new InvalidOperationException("Paper cloth manager changed; retained snapshot cannot be restored by another manager.");
+            if (PaperStates.Alive(Paper) && (!PaperStates.Alive(cloth) || !PaperStates.Alive(virtualDeformer)
+                || !PaperStates.Alive(renderDeformer) || !PaperStates.Alive(filter)
+                || Paper.meshRenderer.GetComponent<MeshFilter>()?.Pointer != filter!.Pointer
+                || Paper.meshRenderer.GetComponent<MagicaMeshCloth>()?.Pointer != cloth!.Pointer
+                || Paper.meshRenderer.GetComponent<MagicaVirtualDeformer>()?.Pointer != virtualDeformer!.Pointer
+                || Paper.meshRenderer.GetComponent<MagicaRenderDeformer>()?.Pointer != renderDeformer!.Pointer
+                || cloth!.virtualDeformer?.Pointer != virtualDeformer!.Pointer
+                || renderDeformer!.Deformer.meshFilter?.Pointer != filter.Pointer))
+                throw new InvalidOperationException("Paper component owner changed; retained snapshot may not overwrite replacements.");
+            return true;
+        }
+        catch (Exception error) { Failed = true; Plugin.ReportOnce("paper owner retained", error); return false; }
+    }
 
     internal PaperState(Newspaper paper) => Paper = paper;
     internal void AllowRetry() => Failed = false;
@@ -144,6 +174,8 @@ internal sealed class PaperState
             virtualEnable = virtualDeformer.Status.userEnable;
             renderEnable = renderDeformer.Status.userEnable;
             previousMesh = filter.sharedMesh;
+            boundaryOwner = manager;
+            computeOwner = manager.Compute ?? throw new InvalidOperationException("Paper cloth compute owner is missing.");
             captured = true;
             // CompleteJob only joins the existing handle; unlike UpdateCompleteSimulation,
             // it does not set runMasterJob. This is a one-time operation for this owner.
@@ -235,13 +267,30 @@ internal sealed class PaperState
         if (PaperStates.Alive(flat)) Object.Destroy(flat);
         flat = null;
         Applied = false;
+        boundaryOwner = null; computeOwner = null;
     }
 
-    internal void ReleaseDestroyedOwner()
+    internal bool ReleaseDestroyedOwner(MagicaPhysicsManager manager)
     {
-        // Unity already destroyed this newspaper and its components. Only our mesh remains.
-        if (PaperStates.Alive(flat)) Object.Destroy(flat);
-        flat = null;
-        captured = false;
+        try
+        {
+            // Destroying just the Newspaper behaviour does not destroy its mesh
+            // consumers. Restore live consumers at their original boundary first.
+            if (captured)
+            {
+                manager.Compute.CompleteJob();
+                bool any = PaperStates.Alive(filter) || PaperStates.Alive(cloth)
+                    || PaperStates.Alive(virtualDeformer) || PaperStates.Alive(renderDeformer);
+                if (any && (!PaperStates.Alive(filter) || !PaperStates.Alive(cloth)
+                    || !PaperStates.Alive(virtualDeformer) || !PaperStates.Alive(renderDeformer)))
+                    throw new InvalidOperationException("Partially destroyed paper consumers require retention; not safe to free mesh.");
+                if (any) RestoreAtBoundary(manager);
+            }
+            if (PaperStates.Alive(flat)) Object.Destroy(flat);
+            flat = null; captured = false; Applied = false;
+            boundaryOwner = null; computeOwner = null;
+            return true;
+        }
+        catch (Exception error) { Failed = true; Plugin.ReportOnce("destroyed paper retained", error); return false; }
     }
 }

@@ -45,6 +45,8 @@ internal static class DockPatch
 internal static class LightPatch
 {
     static bool Prefix(BoatCockpit __instance) => BoatRunner.Current?.GuardCallback(__instance, Operation.Light) != false;
+    // Harmony postfix also runs after a rejected prefix; the preceding allowed flag is authoritative.
+    static void Postfix(BoatCockpit __instance) => BoatLightDiagnostics.Write("callback exit", __instance);
 }
 [HarmonyPatch(typeof(GameSceneManager), "LoadArea")]
 internal static class ScenePatch

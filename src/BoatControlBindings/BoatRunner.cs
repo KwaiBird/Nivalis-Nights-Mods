@@ -74,6 +74,8 @@ public sealed class BoatRunner : MonoBehaviour
             Refresh();
             bool allowed = context != null && !context.Busy && pending == null
                 && Time.frameCount > boundaryFrame && originalFrame != Time.frameCount;
+            BoatLightDiagnostics.Availability(context, allowed, pending != null,
+                originalFrame == Time.frameCount, Time.frameCount <= boundaryFrame);
             var operation = input.Poll(allowed);
             if (operation.HasValue && context != null && BoatPolicy.Visible(operation.Value, context.Mode, context.CanDock, context.Busy))
                 Execute(context, operation.Value);
@@ -129,6 +131,7 @@ public sealed class BoatRunner : MonoBehaviour
                 return;
             }
             var button = operation == Operation.Engine ? live.Cockpit.exitButton : operation == Operation.Dock ? live.Cockpit.dockButton : live.Cockpit.lightButton;
+            if (operation == Operation.Light) BoatLightDiagnostics.Write("request", live.Cockpit);
             if (!ButtonUsable(button) || button.sequence != null) return;
             pending = new Pending { Context = live, Button = button, Generation = epoch.Generation, Devices = BoatContext.Devices(live.Manager) };
             button.DoInteraction();
@@ -146,7 +149,7 @@ public sealed class BoatRunner : MonoBehaviour
         if (p.Sequence != null && !Same(p.Sequence, p.Button.sequence)) { pending = null; input.Reset(); return; }
         bool valid = !p.Rejected && (p.Committed || epoch.Matches(p.Context.Key, p.Generation)) && Common(p.Context.Manager)
             && p.Devices == BoatContext.Devices(p.Context.Manager)
-            && Same(PlayerManager.Instance?.LocalPlayer?.Character, p.Context.Player)
+            && PlayerManager.InstanceNotNull(out var players) && Same(players.LocalPlayer?.Character, p.Context.Player)
             && Same(BoatController.Instance, p.Context.Boat) && Alive(p.Context.Canvas) && Alive(p.Context.Crosshair)
             && p.Context.Crosshair.isActiveAndEnabled;
         if (!p.Committed)
@@ -170,7 +173,12 @@ public sealed class BoatRunner : MonoBehaviour
     [HideFromIl2Cpp]
     internal bool GuardCallback(BoatCockpit cockpit, Operation operation)
     {
-        try { return GuardCallbackCore(cockpit, operation); }
+        try
+        {
+            bool allowed = GuardCallbackCore(cockpit, operation);
+            if (operation == Operation.Light) BoatLightDiagnostics.Write("callback allowed=" + allowed, cockpit);
+            return allowed;
+        }
         catch (Exception ex) { if (pending != null) pending.Rejected = true; Plugin.Logger.LogError($"Boat delayed callback rejected: {ex}"); return false; }
     }
 

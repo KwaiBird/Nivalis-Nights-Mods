@@ -23,16 +23,22 @@ internal sealed record BoatContext(PlayerInputManager Manager, PlayerCharacter P
 
     internal static bool Common(PlayerInputManager? manager)
     {
-        if (!Plugin.Enabled.Value || !Application.isFocused || ApplicationState.IsQuitting || Time.timeScale <= 0
+        if (!GameReady() || !Application.isFocused || ApplicationState.IsQuitting || Time.timeScale <= 0
             || !Alive(manager) || manager!.isRebind || manager.currentMap == null
             || manager.currentMap.name != "GameplayControls" || !manager.currentMap.enabled
             || CursorModeManager.IsCursorActive) return false;
-        var scene = GameSceneManager.Instance;
-        if (!Alive(scene) || !scene.IsGame || GameSceneManager.IsUnloadingGameplay
-            || scene.levelLoading || scene.IsLoadingExternal || scene.IsLoading) return false;
         if (manager.PreventAllMenuShortcuts?.Value == true || manager.PreventGameplayMenuShortcuts?.Value == true) return false;
-        var ui = UIManager.Instance;
-        if (!Alive(ui) || !ui.IsUiShown || !Alive(UIWindowManager.Instance) || UIWindowManager.OpenWindowCount != 0) return false;
+        if (!UIManager.InstanceNotNull(out var ui)) return false;
+        // IsUiShown calls FirstChildCanvas, which may add a Canvas. Probe only existing UI.
+        var canvas = ui.firstChildCanvas;
+        if (!Alive(canvas))
+        {
+            var root = ui.transform;
+            if (root.childCount == 0) return false;
+            canvas = root.GetChild(0).GetComponent<Canvas>();
+        }
+        var windows = UIWindowManager._instance;
+        if (!Alive(canvas) || !canvas!.enabled || !Alive(windows) || windows!._openWindows == null || windows._openWindows.Count != 0) return false;
         var selection = EventSystem.current?.currentSelectedGameObject;
         if (Alive(selection) && (selection!.GetComponent<TMPro.TMP_InputField>()?.isFocused == true
             || selection.GetComponent<InputField>()?.isFocused == true)) return false;
@@ -41,13 +47,14 @@ internal sealed record BoatContext(PlayerInputManager Manager, PlayerCharacter P
 
     internal static BoatContext? Read(CrosshairUI? crosshair, DiegeticButton? ownPending = null)
     {
-        var manager = PlayerInputManager.Instance;
-        if (!Common(manager) || !Alive(crosshair) || !crosshair!.isActiveAndEnabled) return null;
+        if (!GameReady() || !Alive(crosshair) || !crosshair!.isActiveAndEnabled
+            || !PlayerInputManager.InstanceNotNull(out var manager) || !Common(manager)) return null;
         var canvas = crosshair.GetComponentInParent<Canvas>();
         if (!Alive(canvas)) return null;
         canvas = canvas.rootCanvas;
         if (!Alive(canvas) || !canvas.isActiveAndEnabled) return null;
-        var player = PlayerManager.Instance?.LocalPlayer?.Character;
+        if (!PlayerManager.InstanceNotNull(out var players)) return null;
+        var player = players.LocalPlayer?.Character;
         if (!Alive(player) || !Alive(player!.Controller) || !Alive(player.Interaction)
             || !Alive(player.ObjectHolder) || player.ObjectHolder.IsHoldingObject
             || (Alive(player.PlacementSystem) && player.PlacementSystem.IsHoldingObject)) return null;
@@ -73,6 +80,10 @@ internal sealed record BoatContext(PlayerInputManager Manager, PlayerCharacter P
         return new(manager, player, boat, cockpit, crosshair, canvas, mode,
             mode == BoatMode.Driving && ButtonUsable(cockpit.dockButton, ownPending == null), busy);
     }
+
+    private static bool GameReady() => Plugin.Enabled.Value && GameSceneManager.InstanceNotNull(out var scene)
+        && scene.IsGame && !GameSceneManager.IsUnloadingGameplay
+        && !scene.levelLoading && !scene.IsLoadingExternal && !scene.IsLoading;
 
     internal static bool ButtonUsable(DiegeticButton? button, bool checkInteraction = true) => Alive(button)
         && button!.isActiveAndEnabled && button.IsActive && (!checkInteraction || button.CanInteract());

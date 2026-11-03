@@ -5,6 +5,11 @@ public enum BoatMode { Unavailable, Ready, Driving }
 
 public static class BoatHintGeometry
 {
+    // Native keyboard images already contain both lettering and frame, even when
+    // the device's separate TMP display policy requests input text.
+    public static bool NativeIcon(bool pad, bool displayInputText, bool hasIcon, string? spriteName) =>
+        hasIcon && (!pad || !displayInputText) && !string.Equals(spriteName, "Default", StringComparison.OrdinalIgnoreCase);
+
     // TMP may report zero before its first active layout. Keep localized text visible until measurement settles.
     public static float TextWidth(float measured, float fontSize, int length) => length <= 0 ? 0
         : (float.IsFinite(measured) && measured > 0 ? measured : Math.Max(1, fontSize) * length) + 4;

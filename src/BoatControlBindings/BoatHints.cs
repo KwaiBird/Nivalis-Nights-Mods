@@ -74,7 +74,7 @@ internal sealed class BoatHints : IDisposable
             string label = visible ? Name(context, op) : "";
             if (string.IsNullOrWhiteSpace(label)) { row.Hide(); continue; }
             var key = Icon(context.Manager, binding!, pad);
-            row.Show(key.Text, key.Sprite, label, currentLanguage);
+            row.Show(key.Text, key.Sprite, label, currentLanguage, pad);
             row.Rect.anchoredPosition = new(total, 0); total += row.Width + 26;
         }
         total = Math.Max(0, total - 26);
@@ -144,8 +144,9 @@ internal sealed class BoatHints : IDisposable
         for (int i = 0; i < devices.Count; i++)
             if (pad ? devices[i].TryCast<Gamepad>() != null : devices[i].TryCast<Keyboard>() != null) { layout = devices[i].layout; break; }
         var data = manager.inputConfigurator.GetDeviceAssetSprite(layout, name, false);
-        (string Text, Sprite? Sprite) result = data != null && !data.displayInputText && data.displayInputIcon
-            && !string.Equals(data.sprite, "Default", StringComparison.OrdinalIgnoreCase) ? ("", data.displayInputIcon)
+        // Native DisplayActionKeyUI uses the complete key sprite for keyboard too.
+        // Keyboard displayInputText=true controls TMP rich-text displays, not Image availability.
+        (string Text, Sprite? Sprite) result = data != null && BoatHintGeometry.NativeIcon(pad, data.displayInputText, Alive(data.displayInputIcon), data.sprite) ? ("", data.displayInputIcon)
             : (!string.IsNullOrWhiteSpace(data?.name) && !string.Equals(data.name, "Default", StringComparison.OrdinalIgnoreCase) ? data.name : name, null);
         icons[binding.Path] = result; return result;
     }
@@ -199,10 +200,13 @@ internal sealed class BoatHints : IDisposable
                 if (!Same(text.fontSharedMaterial, template.fontSharedMaterial)) { text.fontSharedMaterial = template.fontSharedMaterial; lastText = ""; }
             }
         }
-        internal void Show(string keyName, Sprite? sprite, string operation, int currentLanguage)
+        internal void Show(string keyName, Sprite? sprite, string operation, int currentLanguage, bool pad)
         {
             if (!Alive(Rect)) return;
             Rect.gameObject.SetActive(true); icon.enabled = Alive(sprite); icon.sprite = sprite;
+            icon.type = Image.Type.Simple;
+            // Match the native HUD KeyBind's 40x40 Image; retain the existing 30x30 pad guide.
+            icon.preserveAspect = pad;
             key.enabled = !Alive(sprite);
             string signature = currentLanguage + ":" + keyName + ":" + operation + ":" + (Alive(sprite) ? sprite!.Pointer.ToInt64() : 0);
             if (signature != lastText)
@@ -217,8 +221,10 @@ internal sealed class BoatHints : IDisposable
                 label.ForceMeshUpdate(true, true);
                 lastText = signature;
             }
-            float kw = Alive(sprite) ? 30 : Math.Max(20, BoatHintGeometry.TextWidth(key.GetPreferredValues(keyName).x, key.fontSize, keyName.Length));
+            float iconSize = pad ? 30 : 40;
+            float kw = Alive(sprite) ? iconSize : Math.Max(20, BoatHintGeometry.TextWidth(key.GetPreferredValues(keyName).x, key.fontSize, keyName.Length));
             float lw = operation.Length == 0 ? 0 : BoatHintGeometry.TextWidth(label.GetPreferredValues(operation).x, label.fontSize, operation.Length);
+            icon.rectTransform.sizeDelta = new(iconSize, iconSize);
             key.rectTransform.anchoredPosition = Vector2.zero; key.rectTransform.sizeDelta = new(kw, 34);
             label.rectTransform.anchoredPosition = new(kw + 8, 0); label.rectTransform.sizeDelta = new(lw, 34);
             Width = kw + (lw > 0 ? lw + 8 : 0); Rect.sizeDelta = new(Width, 34);

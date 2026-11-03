@@ -79,7 +79,11 @@ internal sealed class BoatInput : IDisposable
         if (!allowed) { Reset(); return null; }
         var pressed = new List<Operation>();
         foreach (var b in bindings)
-            if (b.Action.enabled && b.Gate.Sample(b.Action.ReadValue<float>())) pressed.Add(b.Operation);
+            if (b.Action.enabled && b.Gate.Sample(b.Action.ReadValue<float>()))
+            {
+                if (b.Operation == Operation.Light) BoatLightDiagnostics.Input(b.Path);
+                pressed.Add(b.Operation);
+            }
         return BoatPolicy.Single(pressed);
     }
     internal bool Reserves(InputAction? native, InputControl? control = null)

@@ -43,7 +43,7 @@ internal static class SettingsUi
 
     internal static void Remove(GameplaySettingsUI panel)
     {
-        if (Rows.Remove(panel.Pointer, out var row)) row.Dispose();
+        if (Rows.TryGetValue(panel.Pointer, out var row)) { row.Dispose(); Rows.Remove(panel.Pointer); }
     }
 
     internal static void Navigation(GameplaySettingsUI panel)
@@ -64,10 +64,11 @@ internal static class SettingsUi
 
     internal static void Shutdown()
     {
-        languageEvents?.Remove(LanguageChanged);
-        languageEvents = null;
-        foreach (var row in Rows.Values) row.Dispose();
-        Rows.Clear();
+        var cleanup = new CleanupBatch();
+        cleanup.Attempt(() => { languageEvents?.Remove(LanguageChanged); languageEvents = null; });
+        foreach (var key in Rows.Keys.ToArray())
+            cleanup.Attempt(() => { Rows[key].Dispose(); Rows.Remove(key); });
+        cleanup.ThrowIfFailed();
     }
 
     private sealed class Row
@@ -224,11 +225,17 @@ internal static class SettingsUi
         internal void Dispose()
         {
             if (!PaperStates.Alive(owner)) return;
-            if (PaperStates.Alive(toggle)) toggle.onValueChanged.RemoveListener(changed);
-            if (PaperStates.Alive(anchor) && Links(anchor).selectOnDown == toggle)
-                Connect(anchor, Links(anchor).selectOnUp, PaperStates.Alive(next) ? next : null);
-            if (PaperStates.Alive(next) && Links(next!).selectOnUp == toggle)
-                Connect(next!, PaperStates.Alive(anchor) ? anchor : null, Links(next!).selectOnDown);
+            var cleanup = new CleanupBatch();
+            cleanup.Attempt(() => { if (PaperStates.Alive(toggle)) toggle.onValueChanged.RemoveListener(changed); });
+            cleanup.Attempt(() => {
+                if (PaperStates.Alive(anchor) && Links(anchor).selectOnDown == toggle)
+                    Connect(anchor, Links(anchor).selectOnUp, PaperStates.Alive(next) ? next : null);
+            });
+            cleanup.Attempt(() => {
+                if (PaperStates.Alive(next) && Links(next!).selectOnUp == toggle)
+                    Connect(next!, PaperStates.Alive(anchor) ? anchor : null, Links(next!).selectOnDown);
+            });
+            cleanup.ThrowIfFailed();
             Object.Destroy(owner);
         }
     }

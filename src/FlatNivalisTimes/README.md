@@ -1,48 +1,55 @@
 # Flat Nivalis Times
 
-*Newspaper Readability Mod*
+*Newspaper Readability Mod — public release 1.1*
 
-Make Nivalis Times easier to read while keeping the newspaper in the character's hands.
-
-Version: **1.0.0**.
+Read the Nivalis Times in the character's hands or in an enlarged view. This independent mod flattens the newspaper, steadies the reading pose, and adds background and contrast controls.
 
 ## Features
 
-- Flatten the newspaper surface and remove its subtle swaying.
-- Stop the reading idle animation while preserving the lift and lower animations.
-- Adjust the grip and thumbs to the flat paper.
-- Turn the readability features on or off together from **Settings > Gameplay > Improve newspaper readability**. Changes apply immediately, without restarting the game or reopening the newspaper.
-- Keep the game's newspaper content, language and weather display.
+- Flat paper with reduced idle movement and an adjusted grip; the original lift/lower animation remains.
+- Switch between handheld and enlarged reading views.
+- Cycle the original, faded and plain paper backgrounds, and toggle dark text with a consistent warm panel palette.
+- On-screen keyboard/controller hints follow the active device and configured bindings, using the game's key/button images when available.
+- Background and contrast choices are retained between sessions. The enlarged view closes when the newspaper is put away.
+- Enable or disable the mod from **Settings > Gameplay > Improve newspaper readability**. The setting and reading hints follow the game's 11 supported languages.
 
-The option is available in both title-screen and in-game settings. It follows the game's language and supports English, German, French, Korean, Japanese, Simplified Chinese, Traditional Chinese, Spanish, Portuguese, Russian and Turkish.
-
-These changes apply only to the Nivalis Times newspaper.
+The mod uses the game's newspaper articles, photographs, fonts and weather display. It applies to the handheld newspaper, not posters. It does not disable the game's lighting or bloom globally.
 
 ## Requirements
 
-- [Nivalis Nights on Steam](https://store.steampowered.com/app/1488490/Nivalis_Nights/) for Windows x64.
-- BepInEx 6 Unity IL2CPP for Windows x64, installed and working with your game version.
+- Nivalis Nights for Windows x64, **Update 7, Steam build 26295359**.
+- BepInEx 6 Unity IL2CPP for Windows x64. Tested loader: **6.0.0-be.788+5b766a3**.
 
-Supported game version: **[Small patch after Update #5](https://store.steampowered.com/news/app/1488490/view/705534184444133867)**, the **2026-10-16 release**, Steam build **25984046**. Compatibility with other game versions has not been established.
+Other game/loader versions are not covered by this check. No other mods are required. Game and dependency files are not bundled.
 
-The tested BepInEx loader is **6.0.0-be.788+5b766a3**. Other builds are not covered by this validation. Game, BepInEx and other dependency files are not included. No other mods are required.
+## Install or update
 
-## Installation
-
-1. Download BepInEx from the [official Bleeding Edge builds page](https://builds.bepinex.dev/projects/bepinex_be). Choose Unity IL2CPP, Windows x64. The tested archive is `BepInEx-Unity.IL2CPP-win-x64-6.0.0-be.788+5b766a3.zip`.
-2. Extract BepInEx into the game folder containing `Nivalis Nights.exe`. Launch the game once to complete setup, then close it.
-3. Download the compiled Flat Nivalis Times mod from the release files. Source-code archives are for building the plugin, not for installation.
-4. Place the DLL at this path relative to the game folder:
+1. Install the Unity IL2CPP Windows x64 build of BepInEx from its [official builds page](https://builds.bepinex.dev/projects/bepinex_be), launch the game once to generate interop assemblies, then close it. When updating the game, let BepInEx refresh its interop before using the mod.
+2. Extract this mod's ZIP into the game folder. The installed DLL must be:
 
 ```text
 BepInEx/plugins/NivalisNights.FlatNivalisTimes/NivalisNights.FlatNivalisTimes.dll
 ```
 
-Launch the game. The readability option is enabled by default.
+3. Keep only one copy of this mod DLL anywhere under `BepInEx/plugins`. Replace the previous DLL while the game is closed; retain the existing config.
+
+The mod is enabled by default. Use the compiled mod ZIP to install it; the source ZIP is for building.
+
+## Reading controls
+
+Open the newspaper normally, or read it during the wake-up sequence. Extra controls are available after it has fully opened and while gameplay input is active.
+
+| Action | Default keyboard | Default Xbox-style controller |
+| --- | --- | --- |
+| Enlarge / return to hands | V | RB |
+| Cycle background | B | LB |
+| Toggle contrast | H | X |
+
+These are defaults; the in-game hints use the current bindings and device. Other normal newspaper controls remain available. Extra controls are suspended during menus, loading, text entry, rebinding, loss of focus and screen transitions. Hints are shortcuts, not mouse buttons.
 
 ## Configuration
 
-Open **Settings > Gameplay > Improve newspaper readability** to change the option. Changes apply immediately and save to:
+Settings are stored only in this mod's INI-format file:
 
 ```text
 BepInEx/config/NivalisNights.FlatNivalisTimes.cfg
@@ -51,38 +58,58 @@ BepInEx/config/NivalisNights.FlatNivalisTimes.cfg
 ```ini
 [General]
 Enabled = true
+
+[Reading]
+Background = Original
+HighContrast = false
+
+[Keyboard]
+View = V
+Background = B
+Contrast = H
+
+[Gamepad]
+View = rightShoulder
+Background = leftShoulder
+Contrast = buttonWest
 ```
 
-Turning it off restores the original newspaper shape, idle movement and grip. The choice is saved only in the mod config and does not affect game saves. You do not need to press the game's Apply button. Restoring Gameplay defaults also returns this option to its default enabled value.
+Background values: `Original`, `Faded`, `Plain`. `HighContrast` accepts `true` or `false`. In-game reading changes save automatically; temporary write failures are retried. To edit the file manually, close the game first and restart afterward.
 
-To edit the config manually, close the game, edit `Enabled`, then relaunch. Live changes should use the gameplay option.
+Bindings accept one short key/button name, case-insensitively. An empty value disables that action for that device. Device prefixes and combinations such as Ctrl+V are unsupported. Conflicting, duplicate, unavailable or synthetic controls may be rejected; check the log.
 
-## Updating
+The preferences apply across game saves. No game settings or save files are edited. Keep the config when updating from the first release, 1.0.0; new entries are added automatically. The enlarged-view state is not saved.
 
-Close the game before replacing the DLL. Keep only one Flat Nivalis Times DLL anywhere under `BepInEx/plugins`. Keep the config to retain your preference.
+## Remove
 
-## Uninstallation
-
-Close the game, remove `NivalisNights.FlatNivalisTimes.dll`, then restart. You may also remove its config if you no longer want the saved preference. A remaining config has no effect when the mod is absent. No changes are written to game assets or save data. Leave BepInEx and other mods in place if they are still needed.
+Close the game, remove this mod's DLL, then restart. Optionally remove its dedicated config to discard preferences. Leave BepInEx and other mods in place if still needed. Removal does not require a save conversion.
 
 ## Troubleshooting
 
-The startup log should list **Flat Nivalis Times 1.0.0** and **Newspaper Readability Mod**. If the option cannot be saved or applied, it shows an error message and the mod logs the failure. Include the mod version, game build, reproduction steps and related `BepInEx/LogOutput.log` entries in a report. Review logs for personal information before sharing them.
+Check `BepInEx/LogOutput.log` for **Flat Nivalis Times 1.1.14**. If hints or controls are absent, check the gameplay option, configured bindings and `Reader controls state` messages. Report the game build, mod version, reproduction steps and relevant log entries. Review logs for personal information before sharing them.
 
-If the option is missing, check that BepInEx loaded the mod and that the DLL is installed at the path shown above. If the newspaper still moves, check that **Improve newspaper readability** is enabled.
+## Changes in 1.1
 
-## Building from source
+- Updated for Nivalis Nights Update 7.
+- Added enlarged reading with a shortcut to return to the handheld view.
+- Added original, faded and plain background choices, plus a contrast toggle with a consistent warm panel palette.
+- Added configurable keyboard/controller shortcuts and device-aware hints using the game's original key/button images.
+- Background and contrast preferences are saved between sessions.
+- Reading controls and saved preferences apply to both wake-up and manually opened newspapers; both routes were checked in game.
+- Improved UI readiness, input handling and cleanup safety.
 
-See the repository [build instructions](../../README.md#building-from-source). Build this project independently; other mods are not required.
+## Build from source
 
-## Development
+Install the SDK specified by `global.json`. With the supported game and BepInEx installed and interop generated, run from the source ZIP root:
 
-OpenAI Codex was used to assist development. The mod author reviewed the changes and check results and performed in-game testing.
+```powershell
+dotnet build src/FlatNivalisTimes/NivalisNights.FlatNivalisTimes.csproj -c Release
+```
+
+For a different installation folder, add `-p:GameDir="D:\SteamLibrary\steamapps\common\Nivalis Nights"`. Install only `src/FlatNivalisTimes/bin/Release/net6.0/NivalisNights.FlatNivalisTimes.dll`.
 
 ## License and third-party rights
 
-Flat Nivalis Times source code, compiled mod and accompanying authored documentation are licensed under **0BSD (Zero-Clause BSD)**. See [LICENSE](LICENSE).
+The authored mod code, compiled plugin and documentation are licensed under **0BSD**; see [LICENSE](LICENSE). Nivalis Nights, BepInEx, Unity, Harmony, Il2CppInterop and other third-party materials retain their respective licenses and terms. Game assets and third-party binaries are not redistributed; the mod references installed game assets at runtime.
 
-Nivalis Nights, BepInEx, Unity, Harmony, Il2CppInterop and other third-party software or assets remain subject to their respective rights holders' licenses and terms. The license does not relicense them.
-
-Original game files, copied or decompiled game code, game assets and third-party library binaries are not included. Newspaper content, game fonts, the hand model and other game assets are referenced from the installed game at runtime and are not redistributed.
+OpenAI Codex assisted development. The author performed in-game testing. Testing does not cover every language, scene, hardware configuration or mod combination.

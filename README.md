@@ -6,16 +6,21 @@ Install only the mods you want. Each mod has its own DLL, configuration file, ve
 
 | Mod | Purpose | Version | Instructions | Download |
 | --- | --- | --- | --- | --- |
-| Boat Control Bindings | Keyboard and controller shortcuts for boat controls | 0.1.8 | [README](src/BoatControlBindings/README.md) | [Release](https://github.com/KwaiBird/Nivalis-Nights-Mods/releases/tag/v0.1.8) |
-| Flat Nivalis Times | Newspaper Readability Mod | 1.0.0 | [README](src/FlatNivalisTimes/README.md) | [Release](https://github.com/KwaiBird/Nivalis-Nights-Mods/releases/tag/flat-nivalis-times-v1.0.0) |
+| Boat Control Bindings | Keyboard and controller shortcuts for boat controls | 1.1 | [README](src/BoatControlBindings/README.md) | [Releases](https://github.com/KwaiBird/Nivalis-Nights-Mods/releases) |
+| Flat Nivalis Times | Steadier handheld and enlarged newspaper reading, background and contrast controls | 1.1 | [README](src/FlatNivalisTimes/README.md) | [Releases](https://github.com/KwaiBird/Nivalis-Nights-Mods/releases) |
 
-Download each mod separately from its release page. Choose the mod ZIP to install it; source ZIPs are for building from source. Compiled DLLs are distributed as release downloads, rather than committed to the source tree.
+The versions listed here are prepared locally; they may not yet be available on the release page. Check the version of each download. Download each mod separately from its release page. Choose the mod ZIP to install it; source ZIPs are for building from source. Compiled DLLs are distributed as release downloads, rather than committed to the source tree.
 
 ## Requirements
 
-- [Nivalis Nights on Steam](https://store.steampowered.com/app/1488490/Nivalis_Nights/) for Windows x64, Steam build **25984046**: **[Small patch after Update #5](https://store.steampowered.com/news/app/1488490/view/705534184444133867)**, released **2026-10-16**.
+- [Nivalis Nights on Steam](https://store.steampowered.com/app/1488490/Nivalis_Nights/) for Windows x64. Supported game builds differ by mod; see the table below.
 - BepInEx 6 Unity IL2CPP for Windows x64, installed and working with that game version.
 - Tested loader: **6.0.0-be.788+5b766a3**. Compatibility with other game or loader versions has not been established.
+
+| Mod version | Supported game build |
+| --- | --- |
+| Flat Nivalis Times 1.1 | Update 7, Steam build **26295359** |
+| Boat Control Bindings 1.1 | Update 7, Steam build **26295359** |
 
 Each mod README includes its complete installation, configuration, update and removal instructions. Game, BepInEx and other dependency files are not included.
 
